@@ -5,16 +5,16 @@
 
 module Main where
 
+import qualified Algebra.Graph as G
+import qualified Algebra.Graph.Class as C
+import qualified Algebra.Graph.HigherKinded.Class as H
+import qualified Algebra.Graph.AdjacencyMap as AM
+import qualified Algebra.Graph.Relation as R
+import qualified Algebra.Graph.Fold as F
+import qualified Algebra.Graph.IntAdjacencyMap as IAM
 import           Common
 import           Control.DeepSeq
-import qualified Data.HashMap.Lazy
-import qualified Data.HashMap.Strict
-import qualified Data.HashTable.IO
-import qualified Data.IntMap.Lazy
-import qualified Data.IntMap.Strict
-import qualified Data.Judy
-import qualified Data.Map.Lazy
-import qualified Data.Map.Strict
+import           Control.Monad
 import           System.Random
 import           Weigh
 
@@ -23,41 +23,24 @@ main :: IO ()
 main =
   mainWith
     (do setColumns [Case,Allocated,Max,Live,GCs]
-        inserts
-        fromlists)
+        clique
+        tree)
 
-inserts :: Weigh ()
-inserts = do func "Data.Map.Strict.insert mempty"
-                  (\(k,v) -> Data.Map.Strict.insert k v mempty)
-                  (1 :: Int,1 :: Int)
-             func "Data.Map.Lazy.insert mempty"
-                  (\(k,v) -> Data.Map.Lazy.insert k v mempty)
-                  (1 :: Int,1 :: Int)
-             func "Data.HashMap.Strict.insert mempty"
-                  (\(k,v) -> Data.HashMap.Strict.insert k v mempty)
-                  (1 :: Int,1 :: Int)
-             func "Data.HashMap.Lazy.insert mempty"
-                  (\(k,v) -> Data.HashMap.Lazy.insert k v mempty)
-                  (1 :: Int,1 :: Int)
+clique :: Weigh ()
+clique = forM_ ([10, 100] :: [Int]) $ \n ->
+  do let !name = "clique [1.." ++ show n ++ "] as "
+     func (name ++ "Algebra.Graph")   (\n -> G.clique [1..n]) n
+     func (name ++ "AdjacencyMap")    (\n -> AM.clique [1..n]) n
+     func (name ++ "IntAdjacencyMap") (\n -> IAM.clique [1..n]) n
+     func (name ++ "Relation")        (\n -> R.clique [1..n]) n
 
-fromlists :: Weigh ()
-fromlists =
-  do let !elems =
-           force (zip (randoms (mkStdGen 0) :: [Int])
-                      [1 :: Int .. 1000000])
-     func "Data.Map.Strict.fromList     (1 million)" Data.Map.Strict.fromList elems
-     func "Data.Map.Lazy.fromList       (1 million)" Data.Map.Lazy.fromList elems
-     func "Data.IntMap.Strict.fromList  (1 million)" Data.IntMap.Strict.fromList elems
-     func "Data.IntMap.Lazy.fromList    (1 million)" Data.IntMap.Lazy.fromList elems
-     func "Data.HashMap.Strict.fromList (1 million)" Data.HashMap.Strict.fromList elems
-     func "Data.HashMap.Lazy.fromList   (1 million)" Data.HashMap.Lazy.fromList elems
-     io "Data.HashTable.IO.BasicHashTable (1 million)"
-          (Data.HashTable.IO.fromList :: [(Int,Int)] -> IO (Data.HashTable.IO.BasicHashTable Int Int))
-          elems
-     io "Data.HashTable.IO.CuckooHashTable (1 million)"
-          (Data.HashTable.IO.fromList :: [(Int,Int)] -> IO (Data.HashTable.IO.CuckooHashTable Int Int))
-          elems
-     io "Data.HashTable.IO.LinearHashTable (1 million)"
-          (Data.HashTable.IO.fromList :: [(Int,Int)] -> IO (Data.HashTable.IO.LinearHashTable Int Int))
-          elems
-     io "Data.Judy" judyFromList elems
+-- | Storage of the tree in someTree. n! + 1 vertices and n! edges,
+-- so the numbers below are already quite high ;)
+tree :: Weigh ()
+tree = forM_([5, 8] :: [Int]) $ \n ->
+  do let !name = "someTree " ++ show n ++ " as "
+     let !tree = someTree n
+     func (name ++ "Algebra.Graph") (\n -> G.tree tree :: G.Graph Int) n
+     func (name ++ "AdjacencyMap") (\n -> AM.tree tree :: AM.AdjacencyMap Int) n
+     func (name ++ "IntAdjacencyMap") (\n -> IAM.tree tree :: IAM.IntAdjacencyMap) n
+     func (name ++ "Relation") (\n -> R.tree tree :: R.Relation Int) n

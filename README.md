@@ -1,12 +1,12 @@
-# dictionaries
+# Graphs (alga only at the moment)
 
-Benchmarks for dictionary data structures: hash tables, maps, tries, etc.
+Benchmarks for graph data structures: AdjacencyMaps, Relation, Algebra.Graph, ...
 
 ## Running
 
 For all benchmarks:
 
-    $ stack bench :space
+    $ stack bench :space :time
 
 For just space:
 
@@ -16,133 +16,52 @@ For just time:
 
     $ stack bench :time
 
-## Insert Int keys space use
+## Clique
 
-|Case|                                              Bytes|    GCs|
-|---|---|---|
-|Data.Map.Strict.insert mempty                        |64      |0  |
-|Data.Map.Lazy.insert mempty                          |64      |0  |
-|Data.HashMap.Strict.insert mempty                    |64      |0  |
-|Data.HashMap.Lazy.insert mempty                      |48      |0  |
+| Case                               | Total bytes | Max residency | Final live | GCs |
+|------------------------------------|-------------|---------------|------------|-----|
+| clique [1..10] as Algebra.Graph    | 1,656       | 0             | 0          |   0 |
+| clique [1..10] as AdjacencyMap     | 48,472      | 31,864        | 31,864     |   0 |
+| clique [1..10] as IntAdjacencyMap  | 44,944      | 31,864        | 31,864     |   0 |
+| clique [1..10] as Relation         | 59,464      | 32,256        | 32,256     |   0 |
+| clique [1..100] as Algebra.Graph   | 15,336      | 0             | 0          |   0 |
+| clique [1..100] as AdjacencyMap    | 435,872     | 31,864        | 31,864     |   0 |
+| clique [1..100] as IntAdjacencyMap | 172,672     | 31,864        | 31,864     |   0 |
+| clique [1..100] as Relation        | 1,667,184   | 32,256        | 32,256     |   3 |
 
-## Pure maps fromList space use
+## Tree with n! nodes
 
-| Case                                     | Total bytes   | Max residency | Final live | GCs   |
-|------------------------------------------|---------------|---------------|------------|-------|
-| Data.Map.Strict.fromList     (1 million) | 1,016,187,152 | 55,394,296    | 31,864     | 1,942 |
-| Data.Map.Lazy.fromList       (1 million) | 1,016,187,152 | 55,394,296    | 31,864     | 1,942 |
-| Data.IntMap.Strict.fromList  (1 million) | 776,852,648   | 55,207,424    | 31,864     | 1,489 |
-| Data.IntMap.Lazy.fromList    (1 million) | 776,852,648   | 55,207,424    | 31,864     | 1,489 |
-| Data.HashMap.Strict.fromList (1 million) | 161,155,384   | 40,358,064    | 0          | 314   |
-| Data.HashMap.Lazy.fromList   (1 million) | 161,155,384   | 40,358,064    | 0          | 314   |
+| Case                          | Total bytes | Max residency | Final live | GCs |
+|-------------------------------|-------------|---------------|------------|-----|
+| someTree 5 as Algebra.Graph   | 376,776     | 94,016        | 94,016     |   0 |
+| someTree 5 as AdjacencyMap    | 949,352     | 81,192        | 81,192     |   1 |
+| someTree 5 as IntAdjacencyMap | 912,160     | 78,680        | 78,680     |   1 |
+| someTree 5 as Relation        | 951,568     | 86,696        | 86,696     |   1 |
+| someTree 8 as Algebra.Graph   | 118,681,048 | 21,074,816    | 21,074,816 | 222 |
+| someTree 8 as AdjacencyMap    | 313,033,272 | 16,690,992    | 16,690,992 | 595 |
+| someTree 8 as IntAdjacencyMap | 299,130,792 | 16,018,720    | 16,018,720 | 570 |
+| someTree 8 as Relation        | 314,402,712 | 66,201,416    | 18,444,896 | 598 |
 
-## IO maps fromList space use
-
-| Case                                          | Total bytes | Max residency | Final live | GCs |
-|-----------------------------------------------|-------------|---------------|------------|-----|
-| Data.HashTable.IO.BasicHashTable (1 million)  | 424,214,184 | 47,254,400    | 1,120      | 672 |
-| Data.HashTable.IO.CuckooHashTable (1 million) | 173,581,848 | 1,328         | 1,328      | 244 |
-| Data.HashTable.IO.LinearHashTable (1 million) | 281,294,784 | 22,373,256    | 0          | 545 |
-| Data.Judy                                     | 112,000,400 | 152           | 152        | 214 |
+*Warning*: The outlier of max residency for relation could be due to its NFData instance
+and might not be representative of real world use.
 
 <!-- RESULTS -->
 
-## Insert Int (Randomized)
+## Compare a circuit to a clique
 
-|Name|10|100|1000|10000|
-|---|---|---|---|---|
-|Data.Map.Lazy|532.6 ns|10.95 μs|246.3 μs|3.888 ms|
-|Data.Map.Strict|613.7 ns|12.86 μs|251.6 μs|4.337 ms|
-|Data.HashMap.Lazy|448.1 ns|6.475 μs|112.9 μs|3.681 ms|
-|Data.HashMap.Strict|482.3 ns|6.147 μs|107.7 μs|3.578 ms|
-|Data.IntMap.Lazy|207.8 ns|3.459 μs|50.05 μs|1.695 ms|
-|Data.IntMap.Strict|239.8 ns|3.955 μs|62.72 μs|1.824 ms|
+|Name|100|1000|
+|---|---|---|
+|Algebra.Graph|521.6 μs|45.89 ms|
+|AdjacencyMap|518.6 μs|48.13 ms|
+|IntAdjacencyMap|115.9 μs|6.641 ms|
+|Relation|1608 μs|115.8 ms|
 
-## IO Insert Int (Randomized)
+## Is a clique a subgraph of a circuit?
 
-|Name|10|100|1000|10000|
-|---|---|---|---|---|
-|Data.HashTable.IO.BasicHashTable|1501 ns|12.87 μs|132.3 μs|2.628 ms|
-|Data.HashTable.IO.LinearHashTable|914.0 ns|9.915 μs|111.9 μs|1.024 ms|
-|Data.HashTable.IO.CuckooHashTable|1027 ns|10.35 μs|104.2 μs|1.562 ms|
-|Data.Judy|440.8 ns|5.487 μs|68.25 μs|0.612 ms|
+|Name|100|1000|
+|---|---|---|
+|Algebra.Graph|978.7 μs|51.90 ms|
+|AdjacencyMap|506.2 μs|48.15 ms|
+|IntAdjacencyMap|114.6 μs|6.598 ms|
+|Relation|1638 μs|115.2 ms|
 
-## Intersection (Randomized)
-
-|Name|10|100|1000|10000|100000|1000000|
-|---|---|---|---|---|---|---|
-|Data.Map.Lazy|1049 ns|12.60 μs|156.2 μs|1578 μs|21.66 ms|197.8 ms|
-|Data.Map.Strict|1042 ns|13.67 μs|151.5 μs|1602 μs|19.97 ms|203.0 ms|
-|Data.HashMap.Lazy|177.2 ns|2.213 μs|30.00 μs|357.9 μs|5.128 ms|51.95 ms|
-|Data.HashMap.Strict|179.3 ns|2.471 μs|30.19 μs|358.4 μs|5.284 ms|51.65 ms|
-|Data.IntMap.Lazy|94.40 ns|0.620 μs|6.229 μs|163.0 μs|4.011 ms|33.22 ms|
-|Data.IntMap.Strict|95.13 ns|0.617 μs|6.444 μs|164.8 μs|3.684 ms|32.42 ms|
-
-## IO Intersection (Randomized)
-
-|Name|10|100|1000|10000|
-|---|---|---|---|---|
-|Data.HashTable.IO.BasicHashTable|2.470 μs|44.41 μs|648.0 μs|8.616 ms|
-|Data.HashTable.IO.LinearHashTable|3.064 μs|40.86 μs|471.9 μs|8.734 ms|
-|Data.HashTable.IO.CuckooHashTable|3.598 μs|48.18 μs|1206 μs|14.65 ms|
-|Data.Judy|3.150 μs|41.50 μs|436.7 μs|6.138 ms|
-
-## Lookup Int (Randomized)
-
-|Name|10|100|1000|10000|100000|1000000|
-|---|---|---|---|---|---|---|
-|Data.Map.Lazy|17.11 ns|26.66 ns|35.41 ns|56.09 ns|75.62 ns|64.22 ns|
-|Data.Map.Strict|17.51 ns|26.25 ns|35.62 ns|51.95 ns|71.76 ns|72.39 ns|
-|Data.HashMap.Lazy|26.63 ns|29.82 ns|24.89 ns|28.10 ns|40.25 ns|44.14 ns|
-|Data.HashMap.Strict|27.19 ns|31.86 ns|25.14 ns|32.25 ns|40.18 ns|48.39 ns|
-|Data.IntMap.Lazy|17.70 ns|27.10 ns|35.27 ns|42.06 ns|49.01 ns|66.90 ns|
-|Data.IntMap.Strict|17.91 ns|26.49 ns|33.68 ns|41.21 ns|47.23 ns|67.03 ns|
-
-## IO Lookup Int (Randomized)
-
-|Name|10|100|1000|10000|100000|1000000|
-|---|---|---|---|---|---|---|
-|Data.HashTable.IO.BasicHashTable|39.09 ns|45.62 ns|39.40 ns|35.00 ns|38.11 ns|36.18 ns|
-|Data.HashTable.IO.LinearHashTable|76.05 ns|77.62 ns|90.57 ns|70.39 ns|77.03 ns|311.3 ns|
-|Data.HashTable.IO.CuckooHashTable|78.33 ns|77.49 ns|87.11 ns|84.02 ns|77.63 ns|78.82 ns|
-|Data.Judy|49.31 ns|70.85 ns|63.10 ns|88.21 ns|54.02 ns|82.28 ns|
-
-## FromList ByteString (Monotonic)
-
-|Name|10000|
-|---|---|
-|Data.Map.Lazy|5.672 ms|
-|Data.Map.Strict|6.056 ms|
-|Data.HashMap.Lazy|3.099 ms|
-|Data.HashMap.Strict|3.357 ms|
-|Data.Trie|15.65 ms|
-
-## FromList ByteString (Randomized)
-
-|Name|10|100|1000|10000|
-|---|---|---|---|---|
-|Data.Map.Lazy|738.9 ns|17.80 μs|395.1 μs|11.27 ms|
-|Data.Map.Strict|846.4 ns|19.68 μs|434.6 μs|10.94 ms|
-|Data.HashMap.Lazy|680.0 ns|9.739 μs|148.0 μs|4.352 ms|
-|Data.HashMap.Strict|709.0 ns|9.864 μs|150.8 μs|4.707 ms|
-|Data.Trie|1062 ns|24.88 μs|1427 μs|25.57 ms|
-
-## LookupByteString Monotonic
-
-|Name|10000|
-|---|---|
-|Data.Map.Lazy|196.2 ns|
-|Data.Map.Strict|198.6 ns|
-|Data.HashMap.Lazy|45.37 ns|
-|Data.HashMap.Strict|45.69 ns|
-|Data.Trie|220.2 ns|
-
-## LookupByteString Randomized
-
-|Name|10000|
-|---|---|
-|Data.Map.Lazy|218.7 ns|
-|Data.Map.Strict|217.0 ns|
-|Data.HashMap.Lazy|59.10 ns|
-|Data.HashMap.Strict|59.01 ns|
-|Data.Trie|273.3 ns|
